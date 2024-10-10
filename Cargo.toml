@@ -1,0 +1,8 @@
+[package]
+name = "kvdb"
+version = "0.1.0"
+authors = ["June Yi <jytechdevops@gmail.com>"]
+description = "A key-value store"
+edition = "2021"
+
+[dependencies]
