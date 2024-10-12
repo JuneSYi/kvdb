@@ -5,19 +5,25 @@ pub struct KvStore {
 }
 
 impl KvStore {
-    pub fn new(key: String, value: String) -> Self {
-        KvStore { key, value }
+    pub fn new() -> KvStore {
+        KvStore { key: "".to_string(), value: "".to_string() }
     }
 
-    pub fn get_key(&self) -> &str {
-        &self.key
-    }
-
-    pub fn get_value(&self) -> &str {
-        &self.value
-    }
-
-    pub fn set_value(&mut self, value: String) {
+    pub fn set(&mut self, key: String, value: String) {
+        self.key = key;
         self.value = value;
     }
+
+    pub fn get(&self, key: String) -> Option<String> {
+        match key == self.key {
+            true => Some(self.value.clone()),
+            false => None
+        }
+    }
+
+    pub fn remove(&mut self, key: String) {
+        // self.value.clone()
+    }
+
+
 }
