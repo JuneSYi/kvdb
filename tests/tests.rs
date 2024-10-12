@@ -1,7 +1,9 @@
 use assert_cmd::prelude::*;
-use kvdb::KvStore;
 use predicates::str::contains;
 use std::process::Command;
+use kvdb::kvstore::kvstore::KvStore;
+
+
 
 // `kvdb` with no args should exit with a non-zero code.
 #[test]
