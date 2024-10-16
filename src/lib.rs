@@ -1,1 +1,1 @@
-pub mod kvstore;
+pub mod kvs;

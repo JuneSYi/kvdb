@@ -1,9 +1,8 @@
-use kvdb::kvstore::kvstore::KvStore;
-use clap::{Parser, Command, Arg, Subcommand};
+use clap::{Arg, Command};
 use std::env;
 use std::process::exit;
 
-#[derive(Parser, Debug)]
+#[derive(Debug)]
 struct Args {
     arg_cmd: String,
     arg_key: String,
@@ -17,51 +16,39 @@ fn main() {
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .subcommand(
             Command::new("set")
-            .about("Set a string value of a string key")
-                .arg(
-                    Arg::new("key")
-                        .help("The string key to set")
-                        .required(true))
+                .about("Set a string value of a string key")
+                .arg(Arg::new("key").help("The string key to set").required(true))
                 .arg(
                     Arg::new("value")
                         .help("The string value to set")
-                        .required(true)
-                )
+                        .required(true),
+                ),
         )
         .subcommand(
             Command::new("get")
                 .about("Get a string value of a string key")
-                .arg(
-                    Arg::new("key")
-                    .help("The key to get")
-                    .required(true)
-                )
+                .arg(Arg::new("key").help("The key to get").required(true)),
         )
         .subcommand(
             Command::new("rm")
-            .about("Remove a string value of a string key")
-                .arg(
-                    Arg::new("key")
-                        .help("The key to remove")
-                        .required(true)
-                )
+                .about("Remove a string value of a string key")
+                .arg(Arg::new("key").help("The key to remove").required(true)),
         )
         .get_matches();
 
     match c.subcommand() {
-        Some(("set", c)) => {
+        Some(("set", _)) => {
             eprintln!("unimplemented");
             exit(1);
         }
-        Some(("get", c)) => {
+        Some(("get", _)) => {
             eprintln!("unimplemented");
             exit(1);
         }
-        Some(("rm", c)) => {
+        Some(("rm", _)) => {
             eprintln!("unimplemented");
             exit(1);
         }
         _ => unreachable!(),
     }
 }
-
