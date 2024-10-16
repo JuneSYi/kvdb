@@ -1,5 +1,7 @@
 use kvdb::kvstore::kvstore::KvStore;
 use clap::{Parser, Command, Arg, Subcommand};
+use std::env;
+use std::process::exit;
 
 #[derive(Parser, Debug)]
 struct Args {
@@ -45,4 +47,21 @@ fn main() {
                 )
         )
         .get_matches();
+
+    match c.subcommand() {
+        Some(("set", c)) => {
+            eprintln!("unimplemented");
+            exit(1);
+        }
+        Some(("get", c)) => {
+            eprintln!("unimplemented");
+            exit(1);
+        }
+        Some(("rm", c)) => {
+            eprintln!("unimplemented");
+            exit(1);
+        }
+        _ => unreachable!(),
+    }
 }
+
