@@ -1,6 +1,8 @@
 use clap::{Arg, Command};
 use std::env;
+use std::error::Error;
 use std::process::exit;
+use anyhow::Result;
 
 #[derive(Debug)]
 struct Args {
@@ -9,7 +11,7 @@ struct Args {
     arg_value: Option<String>,
 }
 
-fn main() {
+fn main() -> Result<()> {
     let c = Command::new("kvdb")
         .version(env!("CARGO_PKG_VERSION"))
         .author(env!("CARGO_PKG_AUTHORS"))
@@ -51,4 +53,5 @@ fn main() {
         }
         _ => unreachable!(),
     }
+
 }

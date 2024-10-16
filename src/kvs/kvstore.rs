@@ -1,4 +1,7 @@
 use std::collections::HashMap;
+// use std::error::Error;
+use anyhow::{Result, Context};
+use crate::error;
 
 #[derive(Debug)]
 pub struct KvStore {
@@ -12,8 +15,10 @@ impl KvStore {
         }
     }
 
-    pub fn set(&mut self, key: String, value: String) {
+    pub fn set(&mut self, key: String, value: String) -> Result<()> {
         self.map.insert(key, value);
+
+        Ok(())
     }
 
     pub fn get(&self, key: String) -> Option<String> {
