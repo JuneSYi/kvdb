@@ -1,25 +1,15 @@
 [package]
-name = "kvdb"
+name = "kvs"
 version = "0.1.0"
-authors = ["June Yi <jytechdevops@gmail.com>"]
+authors = ["June Yi"]
 description = "A key-value store"
-edition = "2021"
+edition = "2024"
 
-[lib]
-name = "kvdb"
-test = false
 
-[[bin]]
-name = "kvdb"
-test = false
 
 [dependencies]
-anyhow = "1.0.89"
-clap = { version = "4.5.20", features = ["derive"] }
-thiserror = "1.0.64"
+clap = "2.32.0"
 
 [dev-dependencies]
-assert_cmd = "2.0.16"
-predicates = "3.1.2"
-tempfile = "3.13.0"
-walkdir = "2.5.0"
+assert_cmd = "0.11.0"
+predicates = "1.0.0"
