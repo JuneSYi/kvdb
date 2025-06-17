@@ -1,49 +1,95 @@
-use clap::{App, AppSettings, Arg, SubCommand};
 use std::process::exit;
 
+use clap::{Command, Arg};
+
+use kvs::KvStore;
+
 fn main() {
-    let matches = App::new(env!("CARGO_PKG_NAME"))
+    let mut kvs = KvStore::new();
+    let args = Command::new("kvdb")
         .version(env!("CARGO_PKG_VERSION"))
-        .author(env!("CARGO_PKG_AUTHORS"))
-        .about(env!("CARGO_PKG_DESCRIPTION"))
-        .setting(AppSettings::DisableHelpSubcommand)
-        .setting(AppSettings::SubcommandRequiredElseHelp)
-        .setting(AppSettings::VersionlessSubcommands)
         .subcommand(
-            SubCommand::with_name("set")
-                .about("Set the value of a string key to a string")
-                .arg(Arg::with_name("KEY").help("A string key").required(true))
-                .arg(
-                    Arg::with_name("VALUE")
-                        .help("The string value of the key")
-                        .required(true),
-                ),
+            Command::new("set")
+                .arg(Arg::new("key").num_args(1))
+                .arg(Arg::new("value").num_args(1))
         )
         .subcommand(
-            SubCommand::with_name("get")
-                .about("Get the string value of a given string key")
-                .arg(Arg::with_name("KEY").help("A string key").required(true)),
+            Command::new("get")
+                .arg(Arg::new("key").num_args(1))
         )
         .subcommand(
-            SubCommand::with_name("rm")
-                .about("Remove a given key")
-                .arg(Arg::with_name("KEY").help("A string key").required(true)),
+            Command::new("rm")
+                .arg(Arg::new("key").num_args(1))
         )
         .get_matches();
-
-    match matches.subcommand() {
-        ("set", Some(_matches)) => {
+    match args.subcommand() {
+        Some(("set", sub_m)) => {
+            let k = sub_m.get_one::<String>("key").expect("key argument not found");
+            let v = sub_m.get_one::<String>("value").expect("value argument not found");
+            kvs.set(k.to_string(), v.to_string());
             eprintln!("unimplemented");
-            exit(1);
-        }
-        ("get", Some(_matches)) => {
+            std::process::exit(1);
+        },
+        Some(("get", sub_m)) => {
+            let k = sub_m.get_one::<String>("key").expect("key argument not found");
+            kvs.get(k.to_string());
             eprintln!("unimplemented");
-            exit(1);
-        }
-        ("rm", Some(_matches)) => {
+            std::process::exit(1);
+        },
+        Some(("rm", sub_m)) => {
+            let k = sub_m.get_one::<String>("key").expect("key argument not found");
+            kvs.remove(k.to_string());
             eprintln!("unimplemented");
-            exit(1);
-        }
-        _ => unreachable!(),
+            std::process::exit(1);
+        },
+        _ => exit(1)
     }
 }
+
+
+// fn main() {
+//     let args = Command::new("kvdb")
+//         .version(env!("CARGO_PKG_VERSION"))
+//         // .arg(
+//         //     Arg::new("vers")
+//         //         .short('V')
+//         //         .action(clap::ArgAction::Version)
+//         // )
+//         .arg(
+//             Arg::new("set")
+//                 .num_args(2)
+//                 .action(clap::ArgAction::Append)
+//         )
+//         .arg(
+//             Arg::new("get")
+//                 .num_args(1)
+//                 .action(clap::ArgAction::Set)
+//         )
+//         .arg(
+//             Arg::new("rm")
+//                 .num_args(1)
+//                 .action(clap::ArgAction::Set)
+//         )
+//         .get_matches();
+    
+// }
+
+
+// #[derive(Parser, Debug)]
+// #[command(version, about, long_about = None)]
+// struct Args {
+//     #[arg()]
+//     get: String,
+
+//     #[arg()]
+//     set: String,
+
+//     #[arg()]
+//     rm: String,
+
+// }
+
+// fn main() {
+//     let args = Args::parse();
+    
+// }
