@@ -1,11 +1,12 @@
-use std::process::exit;
-
+use std::{env, process::exit};
+use std::io::Result;
 use clap::{Command, Arg};
 
 use kvs::KvStore;
 
-fn main() {
-    let mut kvs = KvStore::new();
+fn main() -> Result<()> {
+    let this_dir = env::current_dir()?;
+    let mut kvs = KvStore::open(&this_dir)?;
     let args = Command::new("kvdb")
         .version(env!("CARGO_PKG_VERSION"))
         .subcommand(
@@ -26,70 +27,45 @@ fn main() {
         Some(("set", sub_m)) => {
             let k = sub_m.get_one::<String>("key").expect("key argument not found");
             let v = sub_m.get_one::<String>("value").expect("value argument not found");
-            kvs.set(k.to_string(), v.to_string());
-            eprintln!("unimplemented");
-            std::process::exit(1);
+            match kvs.set(k.to_string(), v.to_string()) {
+                Ok(_) => exit(0),
+                Err(e) => {
+                    println!("Error in writing log to kvs: {e}");
+                    exit(1)
+                }
+            }
         },
         Some(("get", sub_m)) => {
             let k = sub_m.get_one::<String>("key").expect("key argument not found");
-            kvs.get(k.to_string());
-            eprintln!("unimplemented");
-            std::process::exit(1);
+            let v = kvs.get(k.to_string());
+            match v {
+                Ok(v) => {
+                    if let Some(val) = v {
+                        println!("{val}");
+                        exit(0)
+                    } else {
+                        println!("Key not found");
+                        exit(0)    
+                    }
+                },
+                Err(_e) => {
+                    println!("Key not found");
+                    exit(0)
+                }
+            }
         },
         Some(("rm", sub_m)) => {
             let k = sub_m.get_one::<String>("key").expect("key argument not found");
-            kvs.remove(k.to_string());
-            eprintln!("unimplemented");
-            std::process::exit(1);
+            match kvs.remove(k.to_string()) {
+                Ok(_v) => {
+                    exit(0)
+                },
+                Err(_e) => {
+                    eprintln!("Key not found");
+                    exit(0)
+                }
+            }
         },
         _ => exit(1)
     }
 }
-
-
-// fn main() {
-//     let args = Command::new("kvdb")
-//         .version(env!("CARGO_PKG_VERSION"))
-//         // .arg(
-//         //     Arg::new("vers")
-//         //         .short('V')
-//         //         .action(clap::ArgAction::Version)
-//         // )
-//         .arg(
-//             Arg::new("set")
-//                 .num_args(2)
-//                 .action(clap::ArgAction::Append)
-//         )
-//         .arg(
-//             Arg::new("get")
-//                 .num_args(1)
-//                 .action(clap::ArgAction::Set)
-//         )
-//         .arg(
-//             Arg::new("rm")
-//                 .num_args(1)
-//                 .action(clap::ArgAction::Set)
-//         )
-//         .get_matches();
-    
-// }
-
-
-// #[derive(Parser, Debug)]
-// #[command(version, about, long_about = None)]
-// struct Args {
-//     #[arg()]
-//     get: String,
-
-//     #[arg()]
-//     set: String,
-
-//     #[arg()]
-//     rm: String,
-
-// }
-
-// fn main() {
-//     let args = Args::parse();
-    
-// }
