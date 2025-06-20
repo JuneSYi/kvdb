@@ -1,5 +1,5 @@
 use std::{env, process::exit};
-use std::io::Result;
+use std::io::{Result};
 use clap::{Command, Arg};
 
 use kvs::KvStore;
@@ -27,42 +27,29 @@ fn main() -> Result<()> {
         Some(("set", sub_m)) => {
             let k = sub_m.get_one::<String>("key").expect("key argument not found");
             let v = sub_m.get_one::<String>("value").expect("value argument not found");
-            match kvs.set(k.to_string(), v.to_string()) {
-                Ok(_) => exit(0),
-                Err(e) => {
-                    println!("Error in writing log to kvs: {e}");
-                    exit(1)
-                }
-            }
+            kvs.set(k.to_string(), v.to_string())
         },
         Some(("get", sub_m)) => {
-            let k = sub_m.get_one::<String>("key").expect("key argument not found");
-            let v = kvs.get(k.to_string());
-            match v {
-                Ok(v) => {
-                    if let Some(val) = v {
-                        println!("{val}");
-                        exit(0)
-                    } else {
-                        println!("Key not found");
-                        exit(0)    
-                    }
-                },
-                Err(_e) => {
-                    println!("Key not found");
-                    exit(0)
-                }
+            let k = sub_m.get_one::<String>("key").expect("key not found");
+            let result = kvs.get(k.to_string())?;
+            if let Some(val) = result {
+                println!("{val}");
+                exit(0)
+            } else {
+                println!("Key not found");
+                exit(0)    
             }
         },
         Some(("rm", sub_m)) => {
-            let k = sub_m.get_one::<String>("key").expect("key argument not found");
+            let k = sub_m.get_one::<String>("key").expect("key not found");
+            // kvs.remove(k.to_string())
             match kvs.remove(k.to_string()) {
-                Ok(_v) => {
+                Ok(()) => {
                     exit(0)
                 },
                 Err(_e) => {
-                    eprintln!("Key not found");
-                    exit(0)
+                    println!("Key not found");
+                    exit(1)
                 }
             }
         },

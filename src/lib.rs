@@ -1,6 +1,6 @@
 use std::fs::{File, OpenOptions};
 use std::{collections::HashMap, path::PathBuf};
-use std::io::{BufRead, BufReader, Result, Write};
+use std::io::{BufRead, BufReader, Error, Result, Write, ErrorKind};
 use std::path::Path;
 use serde::{Serialize, Deserialize};
 use serde_json;
@@ -60,35 +60,7 @@ impl KvStore {
     }
 
     pub fn get(&self, key: String) -> Result<Option<String>> {
-        let log_value = match self.kvs.get(&key).map(|s| s.to_string()) {
-            Some(v) => v,
-            None => {
-                println!("Key not found");
-                std::process::exit(0)
-            }
-        };
-        let cmd = LogCmd::Set { k: key.clone(), v: log_value.clone() };
-        let serialize_cmd = serde_json::to_string(&cmd)?;
-        let file = OpenOptions::new().read(true).open(&self.file_path)?;
-        let br = BufReader::new(file);
-        let mut found = false;
-        let removed_key = LogCmd::Remove { k: key };
-        let serialized_removed_key = serde_json::to_string(&removed_key)?;
-        for line in br.lines() {
-            let line = line?;
-            if line == serialize_cmd {
-                found = true;
-            } else if line == serialized_removed_key {
-                found = false;
-            }
-        }
-        match found {
-            true => Ok(Some(log_value)),
-            false => {
-                eprintln!("Key not found");
-                std::process::exit(0)
-            }
-        }
+        Ok(self.kvs.get(&key).map(|s| s.to_string()))
     }
 
     pub fn remove(&mut self, key: String) -> Result<()> {
@@ -103,48 +75,7 @@ impl KvStore {
            self.kvs.remove(&key);
            Ok(())
        } else {
-            println!("Key not found");
-            std::process::exit(1)
+            Err(Error::new(ErrorKind::NotFound , "Key not found"))
        }
    }
-    // pub fn remove(&mut self, key: String) -> Result<()> {
-    //     let log_value = match self.kvs.get(&key).map(|s| s.to_string()) {
-    //         Some(v) => v,
-    //         None => {
-    //             println!("Key not found");
-    //             std::process::exit(1)
-    //         }
-    //     };
-    //     let cmd = LogCmd::Set { k: key.clone(), v: log_value.clone() };
-    //     let serialize_cmd = serde_json::to_string(&cmd)?;
-    //     let mut file = OpenOptions::new()
-    //         .read(true)
-    //         .create(true)
-    //         .append(true)
-    //         .open(&self.file_path)?;
-    //     let br = BufReader::new(file);
-    //     let mut exists = false;
-    //     let removed_key = LogCmd::Remove { k: key.clone() };
-    //     let serialized_removed_key = serde_json::to_string(&removed_key)?;
-    //     for line in br.lines() {
-    //         let line = line?;
-    //         if line == serialize_cmd {
-    //             exists = true;
-    //         } else if line == serialized_removed_key {
-    //             exists = false;
-    //         }
-    //     }
-    //     match exists {
-    //         true => {
-    //             writeln!(file, "{}", serialized_removed_key)?;
-    //             self.kvs.remove(&key);
-    //             return Ok(());
-    //         }
-    //         false => {
-    //             self.kvs.remove(&key);
-    //             eprintln!("Key not found");
-    //             std::process::exit(1)
-    //         }
-    //     }
-    // }
 }
