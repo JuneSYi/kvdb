@@ -1,12 +1,13 @@
 use std::fs::{File, OpenOptions};
 use std::{collections::HashMap, path::PathBuf};
-use std::io::{BufRead, BufReader, Error, Result, Write, ErrorKind};
+use std::io::{BufReader, Error, ErrorKind, Result, SeekFrom};
+use std::io::prelude::*;
 use std::path::Path;
 use serde::{Serialize, Deserialize};
 use serde_json;
 
 pub struct KvStore {
-    kvs: HashMap<String, String>,
+    kvs: HashMap<String, LogPointer>,
     file_path: PathBuf,
 }
 
@@ -16,31 +17,42 @@ enum LogCmd {
     Remove { k: String },
 }
 
+struct LogPointer {
+    offset: u64,
+    len: u64,
+}
+
 impl KvStore {
     pub fn new(fp: &Path) -> Self {
         KvStore { 
-            kvs: HashMap::new(), 
+            kvs: HashMap::new(),
             file_path: fp.to_path_buf(),
         }
     }
 
     pub fn open(path: &Path) -> Result<KvStore> {
-        let mut recreate_kvs = HashMap::new();
+        let mut recreate_kvs = HashMap::<String, LogPointer>::new();
         let fp = path.join("log.json");
         if fp.exists() {
             let file = File::open(&fp)?;
-            let br = BufReader::new(file);
-            for line in br.lines() {
-                let line = line?;
-                let cmd: LogCmd = serde_json::from_str(&line)?;
+            let mut br = BufReader::new(file);
+            let mut ptr_position: u64 = 0;
+            let mut buffer = String::new();
+            while br.read_line(&mut buffer)? > 0 {
+                let line_size = buffer.len();
+                let line_content = buffer.trim_end();
+                let cmd: LogCmd = serde_json::from_str(line_content)?;
                 match cmd {
-                    LogCmd::Set { k, v } => {
-                        recreate_kvs.insert(k, v);
+                    LogCmd::Set { k, v: _ } => {
+                        let log_pointer = LogPointer { offset: ptr_position, len: line_size as u64 };
+                        recreate_kvs.insert(k, log_pointer);
                     },
                     LogCmd::Remove { k } => {
                         recreate_kvs.remove(&k);
                     }
                 }
+                ptr_position += line_size as u64;
+                buffer.clear();
             }
         }
         let kvstore = KvStore { kvs: recreate_kvs, file_path: fp };
@@ -54,13 +66,31 @@ impl KvStore {
             .append(true)
             .create(true)
             .open(&self.file_path)?;
+        file.seek(SeekFrom::End(0))?;
+        let before_position = file.stream_position()?;
         writeln!(file, "{serialized_cmd}")?;
-        self.kvs.insert(key, value);
+        let after_position = file.stream_position()?;
+        let log_pointer = LogPointer { offset: before_position, len: after_position - before_position };
+        self.kvs.insert(key, log_pointer);
         Ok(())
     }
 
     pub fn get(&self, key: String) -> Result<Option<String>> {
-        Ok(self.kvs.get(&key).map(|s| s.to_string()))
+        if let Some(log_pointer) = self.kvs.get(&key) {
+            let mut file = OpenOptions::new().read(true).open(&self.file_path)?;
+            file.seek(SeekFrom::Start(log_pointer.offset))?;
+            let mut buffer = vec![0; log_pointer.len as usize];
+            file.read_exact(&mut buffer[..])?;
+            let deserialized_cmd: LogCmd = serde_json::from_slice(&buffer)?;
+            match deserialized_cmd {
+                LogCmd::Set { k: _, v } => {
+                    return Ok(Some(v));
+                },
+                LogCmd::Remove { k: _ } => return Ok(None)
+            };
+        } else {
+            Ok(None)
+        }
     }
 
     pub fn remove(&mut self, key: String) -> Result<()> {
