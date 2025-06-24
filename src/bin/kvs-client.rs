@@ -7,7 +7,7 @@ use kvs::KvStore;
 fn main() -> Result<()> {
     let this_dir = env::current_dir()?;
     let mut kvs = KvStore::open(&this_dir)?;
-    let args = Command::new("kvdb")
+    let args = Command::new("kvs-client")
         .version(env!("CARGO_PKG_VERSION"))
         .subcommand(
             Command::new("set")
