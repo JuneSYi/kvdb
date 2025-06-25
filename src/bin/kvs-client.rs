@@ -2,7 +2,7 @@ use std::{env, process::exit};
 use std::io::{Result};
 use clap::{Command, Arg};
 
-use kvs::KvStore;
+use kvs::{KvStore, KvsEngine};
 
 fn main() -> Result<()> {
     let this_dir = env::current_dir()?;

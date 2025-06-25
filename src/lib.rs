@@ -3,8 +3,17 @@ use std::{collections::HashMap, path::PathBuf};
 use std::io::{BufReader, Error, ErrorKind, Result, SeekFrom};
 use std::io::prelude::*;
 use std::path::Path;
+use std::net::{TcpListener, TcpStream};
+
 use serde::{Serialize, Deserialize};
 use serde_json;
+use sled;
+
+pub trait KvsEngine {
+    fn set(&mut self, key: String, value: String) -> Result<()>;
+    fn get(&self, key: String) -> Result<Option<String>>;
+    fn remove(&mut self, key: String) -> Result<()>;
+}
 
 pub struct KvStore {
     kvs: HashMap<String, LogPointer>,
@@ -12,15 +21,66 @@ pub struct KvStore {
     stale_log_ct: u8,
 }
 
-#[derive(Serialize, Deserialize)]
-enum LogCmd {
-    Set { k: String, v: String },
-    Remove { k: String },
-}
+impl KvsEngine for KvStore {
+    fn set(&mut self, key: String, value: String) -> Result<()> {
+        let cmd = LogCmd::Set { k: key.clone(), v: value.clone() };
+        let serialized_cmd = serde_json::to_string(&cmd)?;
+        let mut file = OpenOptions::new()
+            .append(true)
+            .create(true)
+            .open(&self.file_path)?;
+        file.seek(SeekFrom::End(0))?;
+        let before_position = file.stream_position()?;
+        writeln!(file, "{serialized_cmd}")?;
+        let after_position = file.stream_position()?;
+        let log_pointer = LogPointer { offset: before_position, len: after_position - before_position };
+        if self.kvs.contains_key(&key) {
+            self.stale_log_ct += 1;
+        }
+        self.kvs.insert(key, log_pointer);
+        if self.stale_log_ct > 9 {
+            self.compact_log()?;
+        }
+        Ok(())
+    }
 
-struct LogPointer {
-    offset: u64,
-    len: u64,
+    fn get(&self, key: String) -> Result<Option<String>> {
+        if let Some(log_pointer) = self.kvs.get(&key) {
+            let mut file = OpenOptions::new().read(true).open(&self.file_path)?;
+            file.seek(SeekFrom::Start(log_pointer.offset))?;
+            let mut buffer = vec![0; log_pointer.len as usize];
+            file.read_exact(&mut buffer[..])?;
+            let deserialized_cmd: LogCmd = serde_json::from_slice(&buffer)?;
+            match deserialized_cmd {
+                LogCmd::Set { k: _, v } => {
+                    return Ok(Some(v));
+                },
+                LogCmd::Remove { k: _ } => return Ok(None)
+            };
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn remove(&mut self, key: String) -> Result<()> {
+       if self.kvs.contains_key(&key) {
+            let remove_cmd = LogCmd::Remove { k: key.clone() };
+            let serialized_remove_cmd = serde_json::to_string(&remove_cmd)?;
+            let mut file = OpenOptions::new()
+                .append(true)
+                .create(true)
+                .open(&self.file_path)?;
+            writeln!(file, "{}", serialized_remove_cmd)?;
+            self.kvs.remove(&key);
+            self.stale_log_ct += 1;
+            if self.stale_log_ct > 9 {
+                self.compact_log()?;
+            }
+            Ok(())
+       } else {
+            Err(Error::new(ErrorKind::NotFound , "Key not found"))
+       }
+   }
 }
 
 impl KvStore {
@@ -66,66 +126,6 @@ impl KvStore {
         Ok(kvstore)
     }
 
-    pub fn set(&mut self, key: String, value: String) -> Result<()> {
-        let cmd = LogCmd::Set { k: key.clone(), v: value.clone() };
-        let serialized_cmd = serde_json::to_string(&cmd)?;
-        let mut file = OpenOptions::new()
-            .append(true)
-            .create(true)
-            .open(&self.file_path)?;
-        file.seek(SeekFrom::End(0))?;
-        let before_position = file.stream_position()?;
-        writeln!(file, "{serialized_cmd}")?;
-        let after_position = file.stream_position()?;
-        let log_pointer = LogPointer { offset: before_position, len: after_position - before_position };
-        if self.kvs.contains_key(&key) {
-            self.stale_log_ct += 1;
-        }
-        self.kvs.insert(key, log_pointer);
-        if self.stale_log_ct > 9 {
-            self.compact_log()?;
-        }
-        Ok(())
-    }
-
-    pub fn get(&self, key: String) -> Result<Option<String>> {
-        if let Some(log_pointer) = self.kvs.get(&key) {
-            let mut file = OpenOptions::new().read(true).open(&self.file_path)?;
-            file.seek(SeekFrom::Start(log_pointer.offset))?;
-            let mut buffer = vec![0; log_pointer.len as usize];
-            file.read_exact(&mut buffer[..])?;
-            let deserialized_cmd: LogCmd = serde_json::from_slice(&buffer)?;
-            match deserialized_cmd {
-                LogCmd::Set { k: _, v } => {
-                    return Ok(Some(v));
-                },
-                LogCmd::Remove { k: _ } => return Ok(None)
-            };
-        } else {
-            Ok(None)
-        }
-    }
-
-    pub fn remove(&mut self, key: String) -> Result<()> {
-       if self.kvs.contains_key(&key) {
-            let remove_cmd = LogCmd::Remove { k: key.clone() };
-            let serialized_remove_cmd = serde_json::to_string(&remove_cmd)?;
-            let mut file = OpenOptions::new()
-                .append(true)
-                .create(true)
-                .open(&self.file_path)?;
-            writeln!(file, "{}", serialized_remove_cmd)?;
-            self.kvs.remove(&key);
-            self.stale_log_ct += 1;
-            if self.stale_log_ct > 9 {
-                self.compact_log()?;
-            }
-            Ok(())
-       } else {
-            Err(Error::new(ErrorKind::NotFound , "Key not found"))
-       }
-   }
-
     fn compact_log(&mut self) -> Result<()> {
         let temp_log_path = self.file_path.with_extension("json.compact");
         let mut temp_file = OpenOptions::new()
@@ -156,4 +156,42 @@ impl KvStore {
         self.stale_log_ct = 0;
         Ok(())
     }
+}
+
+pub struct KvsClient {}
+
+pub struct KvsServer {
+    addr: String,
+    storage_engine: String,
+}
+
+impl KvsServer {
+    pub fn new(addr: &str, engine: &str) -> Self {
+        KvsServer { addr: addr.to_string(), storage_engine: engine.to_string() }
+    }
+
+    pub fn run(&self) -> Result<()> {
+        let listener = TcpListener::bind(&self.addr)?;
+        for stream in listener.incoming() {
+            let stream = stream?;
+            println!("connection with {} found", &self.addr);
+            self.handle_client(stream)?;
+        }
+        Ok(())
+    }
+
+    fn handle_client(&self, mut stream: TcpStream) -> Result<()> {
+        todo!()
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+enum LogCmd {
+    Set { k: String, v: String },
+    Remove { k: String },
+}
+
+struct LogPointer {
+    offset: u64,
+    len: u64,
 }
