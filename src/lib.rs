@@ -185,6 +185,62 @@ impl KvsServer {
     }
 }
 
+pub struct SledKvsEngine {
+    sled_db: sled::Db,
+    file_path: PathBuf,
+}
+
+impl KvsEngine for SledKvsEngine {
+    fn set(&mut self, k: String, v: String) -> Result<()> {
+        self.sled_db
+            .insert(k, v.as_bytes())
+            .map_err(|e| Error::new(ErrorKind::Other, e))?;
+        Ok(())
+    }
+
+    fn get(&self, k: String) -> Result<Option<String>> {
+        let sled_return = self.sled_db
+            .get(k.as_bytes())
+            .map_err(|e| Error::new(ErrorKind::Other, e))?;
+        if let Some(sled_value) = sled_return {
+            let val = String::from_utf8(sled_value.to_vec()).map_err(|e| Error::new(ErrorKind::Other, e))?;
+            Ok(Some(val)) 
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn remove(&mut self, k: String) -> Result<()> {
+        self.sled_db
+            .remove(k.as_bytes())
+            .map_err(|e| Error::new(ErrorKind::Other, e))?;
+        Ok(())
+    }
+}
+
+impl SledKvsEngine {
+    pub fn new(fp: &Path) -> Self {
+        SledKvsEngine { 
+            sled_db: sled::open("sled_log").unwrap(),
+            file_path: fp.to_path_buf(),
+        }
+    }
+
+    pub fn open(path: &Path) -> Result<SledKvsEngine> {
+        let sdb = sled::open(path)?;
+        let sled_engine = SledKvsEngine {
+            sled_db: sdb,
+            file_path: path.to_path_buf(),
+        };
+        Ok(sled_engine)
+    }
+}
+
+enum StorageEngine {
+    Kvs,
+    Sled,
+}
+
 #[derive(Serialize, Deserialize)]
 enum LogCmd {
     Set { k: String, v: String },

@@ -19,6 +19,10 @@
 
 ### converting the persistent kv store to a single-threaded kv server and kv client with synchronous networking over a custom protocol
 * `feat: separation of cli binary crates for server and client`
+* `feat: added KvsEngine trait, initial draft/struct for KvsClient and KvsServer`
+  - KvsEngine trait with set, get, and remove methods
+  - refactored KvsStore to implement KvsEngine trait
+* `feat: todo!()`
 
 Credit:
 built through TDD with tests/lessons sourced from https://github.com/pingcap/talent-plan

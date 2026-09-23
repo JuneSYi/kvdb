@@ -1,0 +1,104 @@
+commit 5cf236dd478cda25e3390bff381f1ccba8889cda
+Author: junesyi <junetheyi@gmail.com>
+Date:   Tue Jun 24 23:16:11 2025 -0400
+
+    feat: added KvsEngine trait, initial draft/struct for KvsClient and KvsServer
+
+commit c5a308da9447fd502e479b8cc020101a520a58b6
+Author: junesyi <junetheyi@gmail.com>
+Date:   Mon Jun 23 20:52:01 2025 -0400
+
+    feat: separation of cli binary crates for server and client
+
+commit 3a62c807203eeeae9789209cb2ef0a634dd25f6a
+Author: junesyi <junetheyi@gmail.com>
+Date:   Mon Jun 23 15:46:42 2025 -0400
+
+    feat: log compaction to prevent unbounded log growth
+
+commit 708f622050118cf7a5f73f1bac05ec2136faef7c
+Author: junesyi <junetheyi@gmail.com>
+Date:   Mon Jun 23 14:11:35 2025 -0400
+
+    feat: storing log pointers in the index
+    
+    - removed storage of values on in-memory hashmap
+    - in-memory hashmap stores position of offset within log database (log pointer)
+
+commit 6ea9e4daceab448e7c63b5fe511ea7130eaac1a3
+Author: junesyi <junetheyi@gmail.com>
+Date:   Fri Jun 20 15:36:50 2025 -0400
+
+    style: removed commented code, simplified implementation
+
+commit 0797a2f29e9edc7b56bfece56c5e92f8bd737549
+Author: junesyi <junetheyi@gmail.com>
+Date:   Wed Jun 18 00:42:27 2025 -0400
+
+    feat: on-disk kv store using WAL
+
+commit 348d453d330743f7fb7cace50dd202c9bec0d5a1
+Author: junesyi <junetheyi@gmail.com>
+Date:   Tue Jun 17 00:29:44 2025 -0400
+
+    feat: basic kvs using clap crate for cli parsing
+
+commit 187c78619b88900999d9a074118cda1b30f2b5c0
+Author: junesyi <junetheyi@gmail.com>
+Date:   Mon Jun 16 15:59:19 2025 -0400
+
+    starting over to finish this out from the beginning
+
+commit fa118f8c3ebd09d6360fcd033c4dd62b36d3d9b9
+Author: junesyi <junetheyi@gmail.com>
+Date:   Wed Oct 16 16:30:12 2024 -0700
+
+    custom error added
+
+commit fc64bed41c651fce1693a4d4a81b894f38c22cb5
+Author: junesyi <junetheyi@gmail.com>
+Date:   Wed Oct 16 10:55:56 2024 -0700
+
+    cargo fmt and cargo clippy
+
+commit 92a36c39ab6c1548bc0290ca0327d70b6cd933d6
+Author: junesyi <junetheyi@gmail.com>
+Date:   Tue Oct 15 22:56:48 2024 -0700
+
+    match for subcommands set get and rm
+
+commit b016ee280968af64e36c7ee3e888522fa31d2ff5
+Author: junesyi <junetheyi@gmail.com>
+Date:   Tue Oct 15 22:26:31 2024 -0700
+
+    used clap crate to add command line instance for parsing and matching arguments
+
+commit 4a27a592a698c4bc6449c991e50364e592c77382
+Author: junesyi <junetheyi@gmail.com>
+Date:   Tue Oct 15 18:12:08 2024 -0700
+
+    fixed kvstore, started on kvdb binary
+
+commit 886861fe6ff1c5379721d105efd2a71913c53a70
+Author: junesyi <junetheyi@gmail.com>
+Date:   Sat Oct 12 01:08:40 2024 -0700
+
+    methods new, set, get for KvStore
+
+commit 0b27fb943ca7f72a061bc05903dc54a635f5a9b8
+Author: junesyi <junetheyi@gmail.com>
+Date:   Sat Oct 12 00:06:22 2024 -0700
+
+    testing bin/ and mod configuration
+
+commit 1f4247c893f6928ef4a4ad739d2ef1d24d545889
+Author: junesyi <junetheyi@gmail.com>
+Date:   Thu Oct 10 16:25:52 2024 -0700
+
+    initial setup
+
+commit 2f245ee3d46394755f5af6fc828355d28fba0691
+Author: June Yi <junetheyi@gmail.com>
+Date:   Wed Oct 9 16:00:03 2024 -0700
+
+    Initial commit
